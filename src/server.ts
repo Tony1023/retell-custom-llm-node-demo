@@ -1,28 +1,34 @@
 import express, { Request, Response } from "express";
 import expressWs from "express-ws";
+import bodyParser from "body-parser";
 import { RawData, WebSocket } from "ws";
 import { createServer, Server as HTTPServer } from "http";
 import cors from "cors";
 import { Retell } from "retell-sdk";
 import { CustomLlmRequest, CustomLlmResponse } from "./types";
 // Any one of these following LLM clients can be used to generate responses.
-import { FunctionCallingLlmClient } from "./llms/llm_openai_func_call";
+// import { FunctionCallingLlmClient } from "./llms/llm_openai_func_call";
 // import { DemoLlmClient } from "./llms/llm_azure_openai";
 // import { FunctionCallingLlmClient } from "./llms/llm_azure_openai_func_call_end_call";
 // import { FunctionCallingLlmClient } from "./llms/llm_azure_openai_func_call";
 // import { DemoLlmClient } from "./llms/llm_openrouter";
+import { EchoLlmClient } from "./llms/llm_echo";
 
 export class Server {
   private httpServer: HTTPServer;
+  private retellClient: Retell;
+  private prompts: { [id: string]: string } = {};
   public app: expressWs.Application;
 
   constructor() {
     this.app = expressWs(express()).app;
     this.httpServer = createServer(this.app);
+    this.retellClient = new Retell({ apiKey: process.env.RETELL_API_KEY })
     this.app.use(express.json());
     this.app.use(cors());
     this.app.use(express.urlencoded({ extended: true }));
 
+    this.handleAccessToken();
     this.handleRetellLlmWebSocket();
     this.handleWebhook();
   }
@@ -30,6 +36,19 @@ export class Server {
   listen(port: number): void {
     this.app.listen(port);
     console.log("Listening on " + port);
+  }
+
+  handleAccessToken() {
+    // Using GET as it's the easiest to run with browsers.
+    this.app.post("/token", async (req: Request, res: Response) => {
+      const webCallResponse = await this.retellClient.call.createWebCall({
+        agent_id: process.env.AGENT_ID
+      });
+      console.log(req.body);
+      console.log(`System prompt for ${webCallResponse.call_id} is ${req.body.prompt}`);
+      this.prompts[webCallResponse.call_id] = req.body.prompt;
+      res.send({ accessToken: webCallResponse.access_token });
+    });
   }
 
   /* Handle webhook from Retell server. This is used to receive events from Retell server.
@@ -87,12 +106,13 @@ export class Server {
           ws.send(JSON.stringify(config));
 
           // Start sending the begin message to signal the client is ready.
-          const llmClient = new FunctionCallingLlmClient();
+          const llmClient = new EchoLlmClient();
 
           ws.on("error", (err) => {
             console.error("Error received in LLM websocket client: ", err);
           });
           ws.on("close", (err) => {
+            delete this.prompts[callId];
             console.error("Closing llm ws for: ", callId);
           });
 
@@ -109,7 +129,7 @@ export class Server {
               // print call details
               console.log("call details: ", request.call);
               // Send begin message to start the conversation
-              llmClient.BeginMessage(ws);
+              llmClient.BeginMessage(ws, this.prompts[callId]);
             } else if (
               request.interaction_type === "reminder_required" ||
               request.interaction_type === "response_required"
