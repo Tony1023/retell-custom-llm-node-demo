@@ -1,15 +1,6 @@
 # retell-custom-llm-node-demo
 
-This backend repo demonstrates how to start a WebSocket server that Retell server will connect to. Retell will send
-live transcripts and other updates to the server, and get responses from this server. see [API Docs](https://docs.retellai.com/guide/custom-llm-websocket) for walkthrough.
-
-The protocol of messages we send and expect to receive is documented [here](https://docs.retellai.com/api-references/llm-websocket).
-
-To set up inbound, make phone calls, see [API Docs](https://docs.retellai.com/guide/phone-setup) for a walkthrough.
-
-This repo contains `azure OpenAI`, `OpenAI`, and [`OpenRouter`](https://openrouter.ai), modify the import inside `src/server.ts` to switch between which one to use.
-
-Check this [Youtube Tutorial](https://youtu.be/Tz969io9cPc?feature=shared&t=344) containing a walkthrough using the [Frontend Demo](https://github.com/adam-team/retell-frontend-reactjs-demo/tree/client_sdk) and this repo.
+See the original repo that this one forked from. This one only contains a toy "LLM" agent (essentially an echo service).
 
 ## Steps to run locally to test
 
