@@ -46,7 +46,6 @@ the agent you created should connect with your localhost.
 The custom LLM URL would look like
 `wss://dc14-2601-645-c57f-8670-9986-5662-2c9a-adbd.ngrok-free.app/llm-websocket`
 
-## Run in prod
+## Using Echo LLM agent
 
-To run in prod, you probably want to customize your LLM solution, host the code
-in a cloud, and use that IP to create the agent.
+You only need to setup as instructed above and set the `RETELL_API_KEY` and `AGENT_ID` (from your custom LLM agent from the Retell AI website). 
